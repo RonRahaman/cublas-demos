@@ -1,0 +1,6 @@
+*.o
+*.mod
+cublas_acc_device
+cublas_stream
+*.swp
+*.swo
