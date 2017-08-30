@@ -2,5 +2,6 @@
 *.mod
 cublas_acc_device
 cublas_stream
+cublas_stream_no_c
 *.swp
 *.swo
