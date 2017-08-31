@@ -21,3 +21,8 @@ This repo contains cuBLAS demos from several sources of documentation.
 
 * **cublas\_batch\_no\_c** is a version of cublas\_batch that uses  NVIDIA's
   current (v2017) Fortran interfaces to cuBLAS v2.  It was written by me, Ron Rahaman. 
+
+* **cublas\_batch\_acc** is a version of cublas\_batch\_no\_c that uses OpenACC
+  data directives for host/device data transfers.  It is intended to
+  demonstrate the use of cuBLAS batched dgemm in a code that uses OpenACC for
+  everything else.  It was written by me, Ron Rahaman.
