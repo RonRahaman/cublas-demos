@@ -1,7 +1,8 @@
-*.o
 *.mod
+*.o
+*.swo
+*.swp
 cublas_acc_device
+cublas_batch
 cublas_stream
 cublas_stream_no_c
-*.swp
-*.swo
