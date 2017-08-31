@@ -13,8 +13,11 @@ This repo contains cuBLAS demos from several sources of documentation.
   interface to cuBLAS v2.  
 
 * **cublas\_stream\_no\_c** is a version of cublas\_stream that uses NVIDIA's
-  current Fortran interfaces to cuBLAS v2.  It was written by me, Ron Rahaman.  
+  current (v2017) Fortran interfaces to cuBLAS v2.  It was written by me, Ron Rahaman.  
 
 * **cublas\_batch** calls `cublasDgemmBatched` to launch multiple dgemm operations with one call.  
   It is also from OLCF's tutorial, [Concurrent Kernels II: Batched Library Calls](https://www.olcf.ornl.gov/tutorials/concurrent-kernels-ii-batched-library-calls/#Batched_1).
   Like cublas\_stream,  it uses a custom Fortran interface to the C cuBLAS v2 functions.
+
+* **cublas\_batch\_no\_c** is a version of cublas\_batch that uses  NVIDIA's
+  current (v2017) Fortran interfaces to cuBLAS v2.  It was written by me, Ron Rahaman. 
