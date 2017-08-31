@@ -4,5 +4,6 @@
 *.swp
 cublas_acc_device
 cublas_batch
+cublas_batch_no_c
 cublas_stream
 cublas_stream_no_c

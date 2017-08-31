@@ -18,7 +18,10 @@ cublas_stream_no_c: cublas_stream_no_c.f90
 cublas_batch: cublas_fortran_iso.f90 cublas_batch.f90 cublas_fortran.o 
 	$(FC) $(FFLAGS) $^ -o $@
 
+cublas_batch_no_c: cublas_batch_no_c.f90
+	$(FC) $(FFLAGS) $^ -o $@
+
 clean:
-	rm -f cublas_acc_device cublas_stream cublas_stream_no_c cublas_batch *.mod *.o
+	rm -f cublas_acc_device cublas_stream cublas_stream_no_c cublas_batch cublas_batch_no_c *.mod *.o
 
 .PHONY: clean
