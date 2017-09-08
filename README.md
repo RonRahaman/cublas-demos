@@ -3,6 +3,9 @@ cuBLAS Demos
 
 This repo contains cuBLAS demos from several sources of documentation.  
 
+src/
+----
+
 * **cublas\_acc\_device** calls `cublasSswap` from an OpenACC device kernel.  It is from
   Section 6.2 of PGI's [Fortran CUDA Library Interfaces, v.  2017](https://www.pgroup.com/doc/pgi17cudaint.pdf).
 
@@ -26,3 +29,19 @@ This repo contains cuBLAS demos from several sources of documentation.
   data directives for host/device data transfers.  It is intended to
   demonstrate the use of cuBLAS batched dgemm in a code that uses OpenACC for
   everything else.  It was written by me, Ron Rahaman.
+
+data/
+-----
+
+### Testbeds
+
+  The following testbeds were used to gather the results contained here:
+
+  * **neddy** is a GPU node provided by JLSE at ANL.  It contains 1x NVIDIA
+    P100 GPU.  Details are found [here](https://wiki.jlse.anl.gov/display/JLSEdocs/JLSE+Hardware).  
+
+### Results
+
+  * **cublas_stream_times.p100.csv** contains timings from running cublas\_stream\_no\_c on neddy.
+
+  * **cublas_batch_times.p100.csv** contains timings from running cublas\_batch\_no\_c on neddy.
