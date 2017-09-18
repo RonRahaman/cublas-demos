@@ -8,12 +8,25 @@ program main
   type(c_devptr), allocatable, dimension(:) :: devptr_A, devptr_B, devptr_C
   real(8) :: alpha, beta, index, mysum
   type(cublasHandle) :: handle
+  character(len=128) :: argv
+  integer :: clock_start, clock_end, clock_rate
 
-  !Linear dimension of matrices
-  dim = 100
+  call get_command_argument(1,argv)
+  if (len_trim(argv) > 0) then
+    read (argv, '(i)') dim
+  else
+    dim = 8
+  endif
 
-  ! Number of A,B,C matrix sets
-  batch_count = 1000
+  call get_command_argument(2,argv)
+  if (len_trim(argv) > 0) then
+    read (argv, '(i)') batch_count
+  else
+    batch_count = 1024
+  endif
+
+  print *, 'Matrix dim:  ', dim
+  print *, 'Batch count: ', batch_count
 
   ! Allocate host storage for A,B,C square matrices
   allocate(A(dim,dim,batch_count))
@@ -62,6 +75,9 @@ program main
 
 !$acc update device(devptr_A, devptr_B, devptr_C)
 
+  stat = cudaDeviceSynchronize()
+  call system_clock(clock_start, clock_rate)
+
 !$acc host_data use_device(devptr_A, devptr_B, devptr_C)
   ! batched DGEMM: C = alpha*A*B + beta*C
   stat = cublasDgemmBatched(handle, CUBLAS_OP_N, CUBLAS_OP_N, &
@@ -74,6 +90,9 @@ program main
       batch_count)
 !$acc end host_data
 
+      stat = cudaDeviceSynchronize()
+      call system_clock(clock_end)
+
 !$acc end data
 
   ! Simple sanity test, mysum up all elements
@@ -85,7 +104,13 @@ program main
       enddo
     enddo
   enddo
-  print *, "Sum is:", mysum, "should be: ", dim*(batch_count)*(batch_count+1)/2
+  print *, 'Sum is:      ', mysum
+  print *, 'Should be:   ', dim*(batch_count)*(batch_count+1)/2
+
+  ! Report times, etc
+  print *, ''
+  print *, 'Expect FLOP: ', batch_count * (2*dim**3 + 3*dim**2)
+  print *, 'Time (s):    ', real(clock_end - clock_start) / clock_rate
 
   ! Cleanup
   deallocate(A)
