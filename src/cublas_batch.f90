@@ -1,36 +1,39 @@
 program main
   use ISO_C_BINDING
   use cublas_f
-  implicit none
+  implicit  none
 
-  integer :: dim, stat, i, j, k, batch_count
-  integer(8) :: bytes
+  integer, parameter :: mdim = 8, batch_count = 1024, iter_count = 10
   real(8),dimension(:,:,:), pointer:: A, B, C
-  real(8) :: alpha, beta, index, sum
+  real(8) :: alpha, beta, idx, mysum
   type(C_PTR) :: d_A, d_B, d_C
   type(C_PTR), dimension(:), pointer :: h_d_A, h_d_B, h_d_C, streams
   type(C_PTR) :: handle
+  real, dimension(iter_count) :: times
 
-  integer :: sizeof_double
-  parameter (sizeof_double=8)
+  integer :: stat, i, j, k, iter
+  real :: clock_start, clock_end
 
-  !Linear dimension of matrices
-  dim = 100
+  integer, parameter :: sizeof_double = 8
+  integer(8) :: bytes
 
-  ! Number of A,B,C matrix sets
-  batch_count = 1000
+  write (*,'(A,I15)'),    'Matrix dim:         ', mdim
+  write (*,'(A,I15)'),    'Batch count:        ', batch_count
+
+  ! Create cublas instance
+  stat = cublasCreate(handle)
 
   ! Allocate host storage for A,B,C square matrices
-  allocate(A(dim,dim,batch_count))
-  allocate(B(dim,dim,batch_count))
-  allocate(C(dim,dim,batch_count))
+  allocate(A(mdim,mdim,batch_count))
+  allocate(B(mdim,mdim,batch_count))
+  allocate(C(mdim,mdim,batch_count))
 
   ! Create host pointer array to device matrix storage
   allocate(h_d_A(batch_count))
   allocate(h_d_B(batch_count))
   allocate(h_d_C(batch_count))
-  bytes = dim*dim*sizeof_double
 
+  bytes = mdim*mdim*sizeof_double
   do i=1,batch_count
     stat = cudaMalloc(h_d_A(i), bytes)
     stat = cudaMalloc(h_d_B(i), bytes)
@@ -47,64 +50,83 @@ program main
   stat = cudaMemcpy(d_B, C_LOC(h_d_B(1)), bytes, cudaMemcpyHostToDevice);
   stat = cudaMemcpy(d_C, C_LOC(h_d_C(1)), bytes, cudaMemcpyHostToDevice);
 
-  ! Fill A,B diagonals with sin(i) data, C diagonal with cos(i)^2
-  ! Matrices are arranged column major
-  do k=1,batch_count
-    do j=1,dim
-      do i=1,dim
-        if (i==j) then
-          index = real(j*dim + i)
-          A(i,j,k) = k*sin(index)
-          B(i,j,k) = sin(index)
-          C(i,j,k) = k*cos(index) * cos(index)
-        else
-          A(i,j,k) = 0.0
-          B(i,j,k) = 0.0
-          C(i,j,k) = 0.0
-        endif
-      enddo ! i
-    enddo ! j
-  enddo ! k
+  do iter=1,iter_count
 
-  ! Create cublas instance
-  stat = cublasCreate(handle)
+    ! Fill A,B diagonals with sin(i) data, C diagonal with cos(i)^2
+    ! Matrices are arranged column major
+    do k=1,batch_count
+      do j=1,mdim
+        do i=1,mdim
+          if (i==j) then
+            idx = real(j*mdim + i)
+            A(i,j,k) = k*sin(idx)
+            B(i,j,k) = sin(idx)
+            C(i,j,k) = k*cos(idx) * cos(idx)
+          else
+            A(i,j,k) = 0.0
+            B(i,j,k) = 0.0
+            C(i,j,k) = 0.0
+          endif
+        enddo ! i
+      enddo ! j
+    enddo ! k
 
-  ! Set input matrices on device
-  do i=1,batch_count
-    stat = cublasSetMatrix(dim, dim, sizeof_double, C_LOC(A(1,1,i)), dim, h_d_A(i), dim)
-    stat = cublasSetMatrix(dim, dim, sizeof_double, C_LOC(B(1,1,i)), dim, h_d_B(i), dim)
-    stat = cublasSetMatrix(dim, dim, sizeof_double, C_LOC(C(1,1,i)), dim, h_d_C(i), dim)
-  enddo
+    ! Set input matrices on device
+    do i=1,batch_count
+      stat = cublasSetMatrix(mdim, mdim, sizeof_double, C_LOC(A(1,1,i)), mdim, h_d_A(i), mdim)
+      stat = cublasSetMatrix(mdim, mdim, sizeof_double, C_LOC(B(1,1,i)), mdim, h_d_B(i), mdim)
+      stat = cublasSetMatrix(mdim, mdim, sizeof_double, C_LOC(C(1,1,i)), mdim, h_d_C(i), mdim)
+    enddo
 
-  ! Set matrix coefficients
-  alpha = 1.0
-  beta = 1.0
+    ! Set matrix coefficients
+    alpha = 1.0
+    beta = 1.0
 
-  ! batched DGEMM: C = alpha*A*B + beta*C
-  stat = cublasDgemmBatched(handle, CUBLAS_OP_N, CUBLAS_OP_N, &
-      dim, dim, dim, &
-      alpha,         &
-      d_A, dim,      &
-      d_B, dim,      &
-      beta,          &
-      d_C, dim,      &
-      batch_count)
+    ! batched DGEMM: C = alpha*A*B + beta*C
 
-  ! Retrieve result matrix from device
-  do i=1,batch_count
-    stat = cublasGetMatrix(dim, dim, sizeof_double, h_d_C(i), dim, C_LOC(C(1,1,i)), dim)
-  enddo
+    call cudaDeviceSynchronize()
+    call cpu_time(clock_start)
 
-  ! Simple sanity test, sum up all elements
-  sum = 0.0
-  do k=1,batch_count
-    do j=1,dim
-      do i=1,dim
-        sum = sum + C(i,j,k)
+    ! batched DGEMM: C = alpha*A*B + beta*C
+    stat = cublasDgemmBatched(handle, CUBLAS_OP_N, CUBLAS_OP_N, &
+        mdim, mdim, mdim, &
+        alpha,         &
+        d_A, mdim,      &
+        d_B, mdim,      &
+        beta,          &
+        d_C, mdim,      &
+        batch_count)
+
+    call cudaDeviceSynchronize()
+    call cpu_time(clock_end)
+    times(iter) = clock_end - clock_start
+
+    ! Retrieve result matrix from device
+    do i=1,batch_count
+      stat = cublasGetMatrix(mdim, mdim, sizeof_double, h_d_C(i), mdim, C_LOC(C(1,1,i)), mdim)
+    enddo
+
+    ! Simple sanity test, sum up all elements
+    mysum = 0.0
+    do k=1,batch_count
+      do j=1,mdim
+        do i=1,mdim
+          mysum = mysum + C(i,j,k)
+        enddo
       enddo
     enddo
-  enddo
-  print *, "Sum is:", sum, "should be: ", dim*(batch_count)*(batch_count+1)/2
+    print *, ''
+    write (*,'(A,I15)'),    'Iter:               ', iter
+    write (*,'(A,F15.3)'),  'Sum is:             ', mysum
+    write (*,'(A,F15.3)'),  'Should be:          ', float(mdim*(batch_count)*(batch_count+1)/2)
+
+  enddo ! iter_count
+
+  ! Report times, etc
+  print *, ''
+  write (*,'(A,ES15.3)'), 'Expect FLOP count:    ', real(batch_count * (2*mdim**3 + 3*mdim**2))
+  write (*,'(A,ES15.3,ES11.3,ES11.3)'), 'Avg/min/max time (s): ', &
+      sum(times)/size(times), minval(times), maxval(times)
 
   do i=1,batch_count
     call cudaFree(h_d_A(i))
