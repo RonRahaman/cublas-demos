@@ -3,38 +3,19 @@ program main
   use cublas
   implicit none
 
-  integer :: mdim, stat, i, j, k, iter, batch_count
-  real(8), allocatable, dimension(:,:,:) :: A, B, C
-  type(c_devptr), allocatable, dimension(:) :: devptr_A, devptr_B, devptr_C
+  integer, parameter :: mdim = 8, batch_count = 1024, iter_count = 10
+  real(8), dimension(mdim,mdim,batch_count) :: A, B, C
+  type(c_devptr), dimension(batch_count) :: devptr_A, devptr_B, devptr_C
+  real, dimension(iter_count) :: times
+
+  integer :: stat, i, j, k, iter
   real(8) :: alpha, beta, idx, mysum
   type(cublasHandle) :: handle
   character(len=128) :: argv
   real :: clock_start, clock_end
-  integer, parameter :: iter_count = 10
-  real, dimension(iter_count) :: times
-
-  ! First arg is size of matrix
-  call get_command_argument(1,argv)
-  if (len_trim(argv) > 0) then
-    read (argv, '(i)') mdim
-  else
-    mdim = 8
-  endif
-
-  ! Second arg is size of batch
-  call get_command_argument(2,argv)
-  if (len_trim(argv) > 0) then
-    read (argv, '(i)') batch_count
-  else
-    batch_count = 1024
-  endif
 
   write (*,'(A,I15)'),    'Matrix dim:         ', mdim
   write (*,'(A,I15)'),    'Batch count:        ', batch_count
-
-  ! Allocate host storage
-  allocate(A(mdim,mdim,batch_count), B(mdim,mdim,batch_count), C(mdim,mdim,batch_count))
-  allocate(devptr_A(batch_count), devptr_B(batch_count), devptr_C(batch_count))
 
   do iter=1,iter_count
 
@@ -121,12 +102,6 @@ program main
       SUM(times)/SIZE(times), MINVAL(times), MAXVAL(times)
 
   ! Cleanup
-  deallocate(A)
-  deallocate(B)
-  deallocate(C)
-  deallocate(devptr_A)
-  deallocate(devptr_B)
-  deallocate(devptr_C)
   stat =cublasDestroy(handle)
 
 end program
