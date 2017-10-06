@@ -17,11 +17,11 @@ program main
 
   print *, "dim,", "batch_count,", "sec_per_dgemm,"
 
-  do m = 0,15  ! Batch sizes, 2**m, m=0..14
+  do m = 11,11  ! Batch sizes, 2**m, m=0..14
 
     batch_count = 2**m
 
-    do n=1,5  ! Matrix sizes, 2**n x 2**n, n=0..5
+    do n=3,3  ! Matrix sizes, 2**n x 2**n, n=0..5
 
       dim = 2**n
 
