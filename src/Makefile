@@ -31,6 +31,6 @@ cublas_single: cublas_single.f90
 	$(FC) $(FFLAGS) -Mcudalib=cublas $^ -o $@
 
 clean:
-	rm -f $(OBJ) *.mod *.o
+	rm -f $(OBJ) *.mod *.o *.gpu *.ptx
 
-.PHONY: clean
+.PHONY: clean 

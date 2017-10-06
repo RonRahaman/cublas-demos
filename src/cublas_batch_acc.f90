@@ -9,8 +9,9 @@ program main
   real(8) :: alpha, beta, index, mysum
   type(cublasHandle) :: handle
   character(len=128) :: argv
-  integer :: clock_start, clock_end, clock_rate
+  real :: clock_start, clock_end
 
+  ! First arg is size of matrix
   call get_command_argument(1,argv)
   if (len_trim(argv) > 0) then
     read (argv, '(i)') dim
@@ -18,6 +19,7 @@ program main
     dim = 8
   endif
 
+  ! Second arg is size of batch
   call get_command_argument(2,argv)
   if (len_trim(argv) > 0) then
     read (argv, '(i)') batch_count
@@ -25,16 +27,12 @@ program main
     batch_count = 1024
   endif
 
-  print *, 'Matrix dim:  ', dim
-  print *, 'Batch count: ', batch_count
+  write (*,'(A,I15)'),    'Matrix dim:       ', dim
+  write (*,'(A,I15)'),    'Batch count:      ', batch_count
 
-  ! Allocate host storage for A,B,C square matrices
-  allocate(A(dim,dim,batch_count))
-  allocate(B(dim,dim,batch_count))
-  allocate(C(dim,dim,batch_count))
-  allocate(devptr_A(batch_count))
-  allocate(devptr_B(batch_count))
-  allocate(devptr_C(batch_count))
+  ! Allocate storage for host data and device pointers
+  allocate(A(dim,dim,batch_count), B(dim,dim,batch_count), C(dim,dim,batch_count))
+  allocate(devptr_A(batch_count), devptr_B(batch_count), devptr_C(batch_count))
 
   ! Fill A,B diagonals with sin(i) data, C diagonal with cos(i)^2
   ! Matrices are arranged column major
@@ -76,7 +74,7 @@ program main
 !$acc update device(devptr_A, devptr_B, devptr_C)
 
   stat = cudaDeviceSynchronize()
-  call system_clock(clock_start, clock_rate)
+  call cpu_time(clock_start)
 
 !$acc host_data use_device(devptr_A, devptr_B, devptr_C)
   ! batched DGEMM: C = alpha*A*B + beta*C
@@ -91,7 +89,7 @@ program main
 !$acc end host_data
 
       stat = cudaDeviceSynchronize()
-      call system_clock(clock_end)
+      call cpu_time(clock_end)
 
 !$acc end data
 
@@ -104,13 +102,14 @@ program main
       enddo
     enddo
   enddo
-  print *, 'Sum is:      ', mysum
-  print *, 'Should be:   ', dim*(batch_count)*(batch_count+1)/2
+  print *, ''
+  write (*,'(A,F15.3)'),  'Should be:        ', float(dim*(batch_count)*(batch_count+1)/2)
+  write (*,'(A,F15.3)'),  'Sum is:           ', mysum
 
   ! Report times, etc
   print *, ''
-  print *, 'Expect FLOP: ', batch_count * (2*dim**3 + 3*dim**2)
-  print *, 'Time (s):    ', real(clock_end - clock_start) / clock_rate
+  write (*,'(A,ES15.3)'), 'Expect FLOP count:', real(batch_count * (2*dim**3 + 3*dim**2))
+  write (*,'(A,ES15.3)'), 'Time (s):         ', clock_end - clock_start
 
   ! Cleanup
   deallocate(A)
