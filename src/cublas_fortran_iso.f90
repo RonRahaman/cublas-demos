@@ -107,6 +107,37 @@ module cublas_f
         integer(C_INT), value :: ldc
         integer(C_INT), value :: batch_count
     end function
+
+    integer(C_INT) function cublasDgemmStridedBatched(handle, &
+            transa, transb, &
+            m, n, k, &
+            alpha, &
+            A, lda, strideA, &
+            B, ldb, strideB, &
+            beta, &
+            C, ldc, strideC, &
+            batch_count) & 
+            BIND(C, NAME='f_cublasDgemmStridedBatched')
+        use ISO_C_BINDING
+        type(C_PTR), value    :: handle
+        integer(C_INT), value :: transa
+        integer(C_INT), value :: transb
+        integer(C_INT), value :: m
+        integer(C_INT), value :: n
+        integer(C_INT), value :: k
+        real(C_DOUBLE)        :: alpha
+        type(C_PTR), value    :: A
+        integer(C_INT), value :: lda
+        integer(C_INT), value :: strideA
+        type(C_PTR), value    :: B
+        integer(C_INT), value :: ldb
+        integer(C_INT), value :: strideB
+        real(C_DOUBLE)        :: beta
+        type(C_PTR), value    :: C
+        integer(C_INT), value :: ldc
+        integer(C_INT), value :: strideC
+        integer(C_INT), value :: batch_count
+    end function
  
     integer(C_INT) function cudaStreamCreate(stream_ptr) BIND(C, NAME='f_cudaStreamCreate')
         use ISO_C_BINDING
