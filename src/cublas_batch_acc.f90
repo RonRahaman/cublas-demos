@@ -3,10 +3,10 @@ program main
   use cublas
   implicit none
 
-  integer :: dim, stat, i, j, k, batch_count
+  integer :: mdim, stat, i, j, k, batch_count
   real(8), allocatable, dimension(:,:,:) :: A, B, C
   type(c_devptr), allocatable, dimension(:) :: devptr_A, devptr_B, devptr_C
-  real(8) :: alpha, beta, index, mysum
+  real(8) :: alpha, beta, idx, mysum
   type(cublasHandle) :: handle
   character(len=128) :: argv
   real :: clock_start, clock_end
@@ -14,9 +14,9 @@ program main
   ! First arg is size of matrix
   call get_command_argument(1,argv)
   if (len_trim(argv) > 0) then
-    read (argv, '(i)') dim
+    read (argv, '(i)') mdim
   else
-    dim = 8
+    mdim = 8
   endif
 
   ! Second arg is size of batch
@@ -27,23 +27,23 @@ program main
     batch_count = 1024
   endif
 
-  write (*,'(A,I15)'),    'Matrix dim:       ', dim
+  write (*,'(A,I15)'),    'Matrix dim:       ', mdim
   write (*,'(A,I15)'),    'Batch count:      ', batch_count
 
   ! Allocate storage for host data and device pointers
-  allocate(A(dim,dim,batch_count), B(dim,dim,batch_count), C(dim,dim,batch_count))
+  allocate(A(mdim,mdim,batch_count), B(mdim,mdim,batch_count), C(mdim,mdim,batch_count))
   allocate(devptr_A(batch_count), devptr_B(batch_count), devptr_C(batch_count))
 
   ! Fill A,B diagonals with sin(i) data, C diagonal with cos(i)^2
   ! Matrices are arranged column major
   do k=1,batch_count
-    do j=1,dim
-      do i=1,dim
+    do j=1,mdim
+      do i=1,mdim
         if (i==j) then
-          index = real(j*dim + i)
-          A(i,j,k) = k*sin(index)
-          B(i,j,k) = sin(index)
-          C(i,j,k) = k*cos(index) * cos(index)
+          idx = real(j*mdim + i)
+          A(i,j,k) = k*sin(idx)
+          B(i,j,k) = sin(idx)
+          C(i,j,k) = k*cos(idx) * cos(idx)
         else
           A(i,j,k) = 0.0
           B(i,j,k) = 0.0
@@ -79,12 +79,12 @@ program main
 !$acc host_data use_device(devptr_A, devptr_B, devptr_C)
   ! batched DGEMM: C = alpha*A*B + beta*C
   stat = cublasDgemmBatched(handle, CUBLAS_OP_N, CUBLAS_OP_N, &
-      dim, dim, dim, &
+      mdim, mdim, mdim, &
       alpha,         &
-      devptr_A, dim, &
-      devptr_B, dim, &
+      devptr_A, mdim, &
+      devptr_B, mdim, &
       beta,          &
-      devptr_C, dim, &
+      devptr_C, mdim, &
       batch_count)
 !$acc end host_data
 
@@ -96,19 +96,19 @@ program main
   ! Simple sanity test, mysum up all elements
   mysum = 0.0
   do k=1,batch_count
-    do j=1,dim
-      do i=1,dim
+    do j=1,mdim
+      do i=1,mdim
         mysum = mysum + C(i,j,k)
       enddo
     enddo
   enddo
   print *, ''
-  write (*,'(A,F15.3)'),  'Should be:        ', float(dim*(batch_count)*(batch_count+1)/2)
+  write (*,'(A,F15.3)'),  'Should be:        ', float(mdim*(batch_count)*(batch_count+1)/2)
   write (*,'(A,F15.3)'),  'Sum is:           ', mysum
 
   ! Report times, etc
   print *, ''
-  write (*,'(A,ES15.3)'), 'Expect FLOP count:', real(batch_count * (2*dim**3 + 3*dim**2))
+  write (*,'(A,ES15.3)'), 'Expect FLOP count:', real(batch_count * (2*mdim**3 + 3*mdim**2))
   write (*,'(A,ES15.3)'), 'Time (s):         ', clock_end - clock_start
 
   ! Cleanup
