@@ -33,6 +33,9 @@ cublas_single: cublas_single.f90
 cublas_strided_batch: cublas_fortran_iso.f90 cublas_strided_batch.f90 cublas_fortran.o 
 	$(FC) $(FFLAGS) $^ -o $@
 
+cublas_acc_dnorton: cublas_acc_dnorton.f90
+	$(FC) -O3 $^ -o $@
+
 clean:
 	rm -f $(OBJ) *.mod *.o *.gpu *.ptx
 
