@@ -2,7 +2,8 @@ FC = pgfortran
 CC = nvcc
 CFLAGS = -O3 --gpu-architecture=compute_50
 FFLAGS = -O3 -ta=tesla:cc50,cuda8.0 -Mcuda=cc50,cuda8.0,keepgpu,keepptx -Minfo=accel,ftn 
-OBJ = cublas_acc_device cublas_stream cublas_stream_no_c cublas_batch cublas_batch_no_c cublas_batch_acc cublas_single cublas_strided_batch acc_tiled cpu_tiled
+OBJ = cublas_acc_device cublas_stream cublas_stream_no_c cublas_batch cublas_batch_no_c cublas_batch_acc cublas_single \
+			cublas_strided_batch acc_tiled cpu_tiled acc_tiled_noshmem cpu_tiled_noshmem acc_notiled cpu_notiled
 
 all: $(OBJ)
 
@@ -37,6 +38,18 @@ acc_tiled: acc_tiled.f90
 	$(FC) $(FFLAGS) $^ -o $@
 
 cpu_tiled: acc_tiled.f90
+	$(FC) -O3 $^ -o $@
+
+acc_tiled_noshmem: acc_tiled_noshmem.f90
+	$(FC) $(FFLAGS) $^ -o $@
+
+cpu_tiled_noshmem: acc_tiled_noshmem.f90
+	$(FC) -O3 $^ -o $@
+
+acc_notiled: acc_notiled.f90
+	$(FC) $(FFLAGS) $^ -o $@
+
+cpu_notiled: acc_notiled.f90
 	$(FC) -O3 $^ -o $@
 
 clean:
