@@ -36,7 +36,7 @@ program main
       enddo ! j
     enddo ! k
 
-    !$acc data copyin(A, B) copy(C)
+    !$acc data copyin(Abatch, Bbatch) copy(Cbatch)
 
     !$acc wait
     call cpu_time(clock_start)
