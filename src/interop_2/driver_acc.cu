@@ -1,5 +1,7 @@
 #include "common.h"
 
+extern "C" __global__ void add( int *a, int *b, int *c );
+
 int main( void ) {
     int a[N], b[N], c[N];
 
@@ -13,6 +15,7 @@ int main( void ) {
     {
 #pragma acc host_data use_device(a, b, c)
       {
+        add<<<N,1>>>(a, b, c); 
         add_wrapper(a, b, c);
       }
     }

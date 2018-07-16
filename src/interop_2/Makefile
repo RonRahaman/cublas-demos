@@ -12,7 +12,10 @@ LIBS = -lcudart
 
 # ===============================================
 
-all: driver_f driver_acc driver_cu
+all: driver_f_acc driver_f driver_acc driver_cu
+
+driver_f_acc: driver_f_acc.o add_loop_gpu.o
+	$(FC) $^ -Mcuda=cc60,cuda9.0 -acc -ta=tesla:cc60,cuda9.0 -Minfo=acc -o $@ -lstdc++
 
 driver_f: driver_f.o add_loop_gpu.o
 	$(FC) $^ -Mcuda -o $@ -lstdc++
@@ -25,11 +28,14 @@ driver_cu: driver_cu.o add_loop_gpu.o
 
 # ===============================================
 
+driver_f_acc.o: driver_f_acc.f90
+	$(FC) -Mcuda=cc60,cuda9.0 -acc -ta=tesla:cc60,cuda9.0 -Minfo=acc $(FFLAGS) $^ -c -o $@
+
 driver_f.o: driver_f.f90
 	$(FC) -Mcuda $(FFLAGS) $^ -c -o $@
 
-driver_acc.o: driver_acc.c 
-	$(CXX) -acc -Minfo=acc $(CXXFLAGS) $^ -c -o $@
+driver_acc.o: driver_acc.cu
+	$(NVCC) $(NVCCFLAGS) -Xcompiler -acc -Xcompiler -Minfo=acc $^ -c -o $@
 
 driver_cu.o: driver.cu
 	$(NVCC) $(NVCCFLAGS) $^ -c -o $@
@@ -40,6 +46,6 @@ add_loop_gpu.o: add_loop_gpu.cu
 # ===============================================
 
 clean:
-	rm -rf add_loop_gpu.o driver_cu.o driver_acc.o driver_cu driver_acc driver_f
+	rm -rf add_loop_gpu.o driver_cu.o driver_acc.o driver_f_acc.o driver_cu driver_acc driver_f
 
 .PHONY: clean
