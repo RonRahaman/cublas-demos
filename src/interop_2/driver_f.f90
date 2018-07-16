@@ -9,7 +9,7 @@ program main
   integer :: i
 
   interface
-    attributes(global) subroutine add(a, b, c) bind(C, name='add_wrapper')
+    attributes(global) subroutine add(a, b, c) bind(C, name='add')
       use ISO_C_BINDING
       integer(c_int) :: a(*), b(*), c(*)
     end subroutine add

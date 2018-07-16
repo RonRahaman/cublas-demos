@@ -30,7 +30,7 @@ static void HandleError( cudaError_t err,
                                     __FILE__, __LINE__ ); \
                             exit( EXIT_FAILURE );}}
 
-__global__ void add( int *a, int *b, int *c ) {
+extern "C" __global__ void add( int *a, int *b, int *c ) {
     int tid = blockIdx.x;    // this thread handles the data at its thread id
     if (tid < N)
         c[tid] = a[tid] + b[tid];

@@ -6,6 +6,7 @@ CXXFLAGS = -O3
 FFLAGS = -O3 
 NVCCFLAGS = -ccbin $(CXX) -O3
 
+CUDA_DIR ?= /soft/compilers/cuda/cuda-9.0.176
 LDFLAGS = -L$(CUDA_DIR)/lib64
 LIBS = -lcudart
 
@@ -14,7 +15,7 @@ LIBS = -lcudart
 all: driver_f driver_acc driver_cu
 
 driver_f: driver_f.o add_loop_gpu.o
-	$(FC) $^ -Mcuda -o $@
+	$(FC) $^ -Mcuda -o $@ -lstdc++
 
 driver_acc: driver_acc.o add_loop_gpu.o
 	$(CXX) -acc -Minfo=acc $^ -o $@ $(LDFLAGS) $(LIBS) 
@@ -39,6 +40,6 @@ add_loop_gpu.o: add_loop_gpu.cu
 # ===============================================
 
 clean:
-	rm -rf add_loop_gpu.o driver_cu.o driver_acc.o driver_cu driver_acc
+	rm -rf add_loop_gpu.o driver_cu.o driver_acc.o driver_cu driver_acc driver_f
 
 .PHONY: clean
