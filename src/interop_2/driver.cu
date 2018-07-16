@@ -15,6 +15,8 @@ static void HandleError( cudaError_t err,
                                     __FILE__, __LINE__ ); \
                             exit( EXIT_FAILURE );}}
 
+extern "C" __global__ void add( int *a, int *b, int *c );
+
 int main( void ) {
     int a[N], b[N], c[N];
     int *dev_a, *dev_b, *dev_c;
@@ -36,7 +38,7 @@ int main( void ) {
     HANDLE_ERROR( cudaMemcpy( dev_b, b, N * sizeof(int),
                               cudaMemcpyHostToDevice ) );
 
-    add_wrapper(dev_a, dev_b, dev_c);
+    add<<<N,1>>>(dev_a, dev_b, dev_c); 
 
     // copy the array 'c' back from the GPU to the CPU
     HANDLE_ERROR( cudaMemcpy( c, dev_c, N * sizeof(int),
